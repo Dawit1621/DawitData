@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | Dawit Data</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --dark: #0f172a;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-500: #64748b;
+      --gray-700: #334155;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: var(--dark); }
+
+    .login-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .login-box {
+      background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 1px solid var(--gray-200);
+    }
+    .login-box h1 { font-size: 1.5rem; margin-bottom: 8px; }
+    .login-box p { color: var(--gray-500); margin-bottom: 28px; font-size: 0.95rem; }
+    .login-box input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+      font-size: 0.95rem; margin-bottom: 16px;
+    }
+    .login-box input:focus { outline: none; border-color: var(--primary); }
+    .login-box button {
+      width: 100%; padding: 12px; background: var(--primary); color: white; border: none;
+      border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer;
+    }
+    .login-box button:hover { background: #1d4ed8; }
+    .error-msg { color: var(--danger); font-size: 0.9rem; margin-bottom: 12px; display: none; }
+
+    .dashboard { display: none; }
+    .topbar {
+      background: white; border-bottom: 1px solid var(--gray-200); padding: 16px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .topbar h1 { font-size: 1.25rem; font-weight: 700; }
+    .topbar .logo span { color: var(--primary); }
+    .topbar button {
+      background: none; border: 1px solid var(--gray-200); padding: 8px 16px;
+      border-radius: 6px; cursor: pointer; font-weight: 500;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 32px;
+    }
+    .stat-card {
+      background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px;
+    }
+    .stat-card .num { font-size: 1.75rem; font-weight: 800; }
+    .stat-card .label { font-size: 0.85rem; color: var(--gray-500); margin-top: 4px; }
+    .stat-card.new .num { color: var(--primary); }
+    .stat-card.won .num { color: var(--success); }
+    .stat-card.lost .num { color: var(--danger); }
+
+    .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filters select, .filters button {
+      padding: 8px 14px; border: 1px solid var(--gray-200); border-radius: 8px;
+      background: white; font-size: 0.9rem; cursor: pointer;
+    }
+    .filters button.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .leads-table {
+      background: white; border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; }
+    th { background: var(--gray-100); font-weight: 600; color: var(--gray-700); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+
+    .status {
+      display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+    .status.new { background: #dbeafe; color: #1d4ed8; }
+    .status.contacted { background: #fef3c7; color: #b45309; }
+    .status.quoted { background: #e0e7ff; color: #4338ca; }
+    .status.won { background: #d1fae5; color: #047857; }
+    .status.lost { background: #fee2e2; color: #b91c1c; }
+
+    .actions select {
+      padding: 4px 8px; border-radius: 6px; border: 1px solid var(--gray-200); font-size: 0.8rem;
+    }
+
+    .empty { text-align: center; padding: 60px 20px; color: var(--gray-500); }
+
+    .detail-modal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      align-items: center; justify-content: center; z-index: 100; padding: 24px;
+    }
+    .detail-modal.show { display: flex; }
+    .modal-content {
+      background: white; border-radius: 16px; padding: 32px; max-width: 560px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-content h2 { margin-bottom: 20px; font-size: 1.25rem; }
+    .modal-row { margin-bottom: 14px; }
+    .modal-row label { font-size: 0.8rem; color: var(--gray-500); display: block; margin-bottom: 2px; }
+    .modal-row p { font-size: 0.95rem; }
+    .modal-close {
+      margin-top: 24px; padding: 10px 20px; background: var(--gray-100); border: none;
+      border-radius: 8px; cursor: pointer; font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+      <h1>Dawit<span style="color:var(--primary)">Data</span> Admin</h1>
+      <p>Enter your admin token to manage leads.</p>
+      <div class="error-msg" id="loginError">Invalid token. Check your .env file.</div>
+      <input type="password" id="tokenInput" placeholder="Admin token" />
+      <button onclick="login()">Login</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <div class="topbar">
+      <h1 class="logo">Dawit<span>Data</span> — Leads</h1>
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+      <div class="stats" id="stats"></div>
+
+      <div class="filters">
+        <button class="active" data-status="" onclick="filterStatus(this, '')">All</button>
+        <button data-status="new" onclick="filterStatus(this, 'new')">New</button>
+        <button data-status="contacted" onclick="filterStatus(this, 'contacted')">Contacted</button>
+        <button data-status="quoted" onclick="filterStatus(this, 'quoted')">Quoted</button>
+        <button data-status="won" onclick="filterStatus(this, 'won')">Won</button>
+        <button data-status="lost" onclick="filterStatus(this, 'lost')">Lost</button>
+      </div>
+
+      <div class="leads-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Service</th>
+              <th>Budget</th>
+              <th>Lang</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="leadsBody"></tbody>
+        </table>
+        <div class="empty" id="emptyState" style="display:none;">No leads yet. They will appear here when clients submit the form.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="detail-modal" id="detailModal">
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+
+  <script>
+    let token = localStorage.getItem('dawit_admin_token') || '';
+    let currentStatus = '';
+
+    function login() {
+      const input = document.getElementById('tokenInput').value.trim();
+      if (!input) return;
+      token = input;
+      localStorage.setItem('dawit_admin_token', token);
+      document.getElementById('loginError').style.display = 'none';
+      showDashboard();
+    }
+
+    function logout() {
+      token = '';
+      localStorage.removeItem('dawit_admin_token');
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...(options.headers || {})
+        }
+      });
+      if (res.status === 401) {
+        logout();
+        document.getElementById('loginError').style.display = 'block';
+        throw new Error('Unauthorized');
+      }
+      return res.json();
+    }
+
+    async function showDashboard() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      await loadStats();
+      await loadLeads();
+    }
+
+    async function loadStats() {
+      try {
+        const data = await api('/api/admin/stats');
+        const s = data.stats;
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card"><div class="num">${s.total}</div><div class="label">Total</div></div>
+          <div class="stat-card new"><div class="num">${s.new}</div><div class="label">New</div></div>
+          <div class="stat-card"><div class="num">${s.contacted}</div><div class="label">Contacted</div></div>
+          <div class="stat-card"><div class="num">${s.quoted}</div><div class="label">Quoted</div></div>
+          <div class="stat-card won"><div class="num">${s.won}</div><div class="label">Won</div></div>
+          <div class="stat-card lost"><div class="num">${s.lost}</div><div class="label">Lost</div></div>
+        `;
+      } catch (e) {}
+    }
+
+    async function loadLeads() {
+      try {
+        const url = currentStatus ? `/api/admin/leads?status=${currentStatus}` : '/api/admin/leads';
+        const data = await api(url);
+        const tbody = document.getElementById('leadsBody');
+        const empty = document.getElementById('emptyState');
+
+        if (!data.leads || data.leads.length === 0) {
+          tbody.innerHTML = '';
+          empty.style.display = 'block';
+          return;
+        }
+        empty.style.display = 'none';
+
+        tbody.innerHTML = data.leads.map(l => `
+          <tr>
+            <td>${formatDate(l.created_at)}</td>
+            <td><strong>${escapeHtml(l.name)}</strong></td>
+            <td><a href="mailto:${escapeHtml(l.email)}">${escapeHtml(l.email)}</a></td>
+            <td>${escapeHtml(l.service || '—')}</td>
+            <td>${escapeHtml(l.budget || '—')}</td>
+            <td>${l.language === 'am' ? 'አማ' : 'EN'}</td>
+            <td><span class="status ${l.status}">${l.status}</span></td>
+            <td class="actions">
+              <select onchange="updateStatus(${l.id}, this.value)">
+                <option value="new" ${l.status==='new'?'selected':''}>new</option>
+                <option value="contacted" ${l.status==='contacted'?'selected':''}>contacted</option>
+                <option value="quoted" ${l.status==='quoted'?'selected':''}>quoted</option>
+                <option value="won" ${l.status==='won'?'selected':''}>won</option>
+                <option value="lost" ${l.status==='lost'?'selected':''}>lost</option>
+              </select>
+              <button onclick="showDetail(${l.id})" style="margin-left:6px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:white;cursor:pointer;font-size:0.8rem;">View</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function filterStatus(btn, status) {
+      document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStatus = status;
+      loadLeads();
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        await api(`/api/admin/leads/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status })
+        });
+        await loadStats();
+        await loadLeads();
+      } catch (e) {
+        alert('Failed to update status');
+      }
+    }
+
+    async function showDetail(id) {
+      try {
+        const data = await api(`/api/admin/leads/${id}`);
+        const l = data.lead;
+        document.getElementById('modalContent').innerHTML = `
+          <h2>${escapeHtml(l.name)}</h2>
+          <div class="modal-row"><label>Email</label><p><a href="mailto:${escapeHtml(l.email)}">${escapeHtml(l.email)}</a></p></div>
+          <div class="modal-row"><label>Service</label><p>${escapeHtml(l.service || '—')}</p></div>
+          <div class="modal-row"><label>Budget</label><p>${escapeHtml(l.budget || '—')}</p></div>
+          <div class="modal-row"><label>Language</label><p>${l.language === 'am' ? 'Amharic' : 'English'}</p></div>
+          <div class="modal-row"><label>Source</label><p>${escapeHtml(l.source || 'website')}</p></div>
+          <div class="modal-row"><label>Status</label><p><span class="status ${l.status}">${l.status}</span></p></div>
+          <div class="modal-row"><label>Message</label><p style="white-space:pre-wrap;">${escapeHtml(l.message || '')}</p></div>
+          <div class="modal-row"><label>Notes</label><p>${escapeHtml(l.notes || '—')}</p></div>
+          <div class="modal-row"><label>Received</label><p>${l.created_at}</p></div>
+          <button class="modal-close" onclick="closeModal()">Close</button>
+        `;
+        document.getElementById('detailModal').classList.add('show');
+      } catch (e) {
+        alert('Failed to load details');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('show');
+    }
+
+    function formatDate(str) {
+      if (!str) return '—';
+      const d = new Date(str + 'Z');
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Auto-login if token exists
+    if (token) {
+      showDashboard().catch(() => logout());
+    }
+
+    // Enter key on login
+    document.getElementById('tokenInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>
