@@ -1,5 +1,5 @@
 /**
- * Dawit Data - Backend Server
+ * Dawit Data — Backend Server
  * Simple, reliable REST API + static file serving
  * Designed as a serious freelance business operation system
  */
@@ -19,7 +19,9 @@ const PORT = process.env.PORT || 3000;
 
 // ---------- Simple JSON Database ----------
 const dataDir = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
 
 const dbPath = path.join(dataDir, 'leads.json');
 
@@ -31,33 +33,47 @@ function readLeads() {
     const raw = fs.readFileSync(dbPath, 'utf8');
     return JSON.parse(raw);
   } catch (err) {
-    console.error('DB read error:', err);
+    console.error('DB read error:', err.message);
     return { leads: [] };
   }
 }
 
 function writeLeads(data) {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+  // Atomic-ish write: write temp then rename to reduce corruption risk
+  const tmp = dbPath + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+  fs.renameSync(tmp, dbPath);
 }
 
 // ---------- Security & Middleware ----------
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  helmet({
+    contentSecurityPolicy: false // allow inline styles/scripts used by the static pages
+  })
+);
 app.use(cors());
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('combined'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 const formLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: 'Too many requests. Please try again later.' }
 });
 
 function requireAdmin(req, res, next) {
-  const authHeader = req.headers.authorization;
-  const token = process.env.ADMIN_TOKEN || 'change_me_immediately';
+  const authHeader = req.headers.authorization || '';
+  const token = process.env.ADMIN_TOKEN;
 
-  if (!authHeader || authHeader !== `Bearer ${token}`) {
+  if (!token || token === 'change_me_to_a_long_random_secret_at_least_32_chars') {
+    console.warn('WARNING: ADMIN_TOKEN is missing or still the example value. Set a strong token in .env');
+  }
+
+  const expected = token || 'change_me_immediately';
+  if (authHeader !== `Bearer ${expected}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
@@ -69,14 +85,14 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // ---------- Public API ----------
 app.post('/api/leads', formLimiter, (req, res) => {
   try {
-    const { name, email, service, budget, message, language, source } = req.body;
+    const { name, email, service, budget, message, language, source } = req.body || {};
 
     if (!name || !email || !message) {
       return res.status(400).json({ error: 'Name, email and message are required.' });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(String(email).trim())) {
       return res.status(400).json({ error: 'Invalid email address.' });
     }
 
@@ -85,19 +101,20 @@ app.post('/api/leads', formLimiter, (req, res) => {
 
     const lead = {
       id: uuidv4(),
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      service: service || null,
-      budget: budget || null,
-      message: message.trim(),
+      name: String(name).trim().slice(0, 200),
+      email: String(email).trim().toLowerCase().slice(0, 254),
+      service: service ? String(service).trim().slice(0, 100) : null,
+      budget: budget ? String(budget).trim().slice(0, 50) : null,
+      message: String(message).trim().slice(0, 5000),
       status: 'new',
-      source: source || 'website',
-      language: language || 'en',
+      source: source ? String(source).trim().slice(0, 50) : 'website',
+      language: language === 'am' ? 'am' : 'en',
       notes: null,
       created_at: now,
       updated_at: now
     };
 
+    db.leads = db.leads || [];
     db.leads.unshift(lead);
     writeLeads(db);
 
@@ -107,7 +124,7 @@ app.post('/api/leads', formLimiter, (req, res) => {
       id: lead.id
     });
   } catch (err) {
-    console.error('Error saving lead:', err);
+    console.error('Error saving lead:', err.message);
     res.status(500).json({ error: 'Server error. Please try again or email directly.' });
   }
 });
@@ -120,28 +137,34 @@ app.get('/api/admin/leads', requireAdmin, (req, res) => {
     let leads = db.leads || [];
 
     if (status) {
-      leads = leads.filter(l => l.status === status);
+      leads = leads.filter((l) => l.status === status);
     }
 
-    leads = leads.slice(0, Number(limit));
+    const max = Math.min(Math.max(Number(limit) || 100, 1), 500);
+    leads = leads.slice(0, max);
 
     res.json({ success: true, total: leads.length, leads });
   } catch (err) {
-    console.error(err);
+    console.error(err.message);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
 });
 
 app.get('/api/admin/leads/:id', requireAdmin, (req, res) => {
-  const db = readLeads();
-  const lead = (db.leads || []).find(l => l.id === req.params.id);
-  if (!lead) return res.status(404).json({ error: 'Lead not found' });
-  res.json({ success: true, lead });
+  try {
+    const db = readLeads();
+    const lead = (db.leads || []).find((l) => l.id === req.params.id);
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    res.json({ success: true, lead });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: 'Failed to fetch lead' });
+  }
 });
 
 app.patch('/api/admin/leads/:id', requireAdmin, (req, res) => {
   try {
-    const { status, notes } = req.body;
+    const { status, notes } = req.body || {};
     const allowed = ['new', 'contacted', 'quoted', 'won', 'lost'];
 
     if (status && !allowed.includes(status)) {
@@ -149,17 +172,19 @@ app.patch('/api/admin/leads/:id', requireAdmin, (req, res) => {
     }
 
     const db = readLeads();
-    const index = (db.leads || []).findIndex(l => l.id === req.params.id);
+    const index = (db.leads || []).findIndex((l) => l.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Lead not found' });
 
     if (status) db.leads[index].status = status;
-    if (notes !== undefined) db.leads[index].notes = notes;
+    if (notes !== undefined) {
+      db.leads[index].notes = notes === null || notes === '' ? null : String(notes).slice(0, 2000);
+    }
     db.leads[index].updated_at = new Date().toISOString();
 
     writeLeads(db);
     res.json({ success: true, lead: db.leads[index] });
   } catch (err) {
-    console.error(err);
+    console.error(err.message);
     res.status(500).json({ error: 'Update failed' });
   }
 });
@@ -171,21 +196,26 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
 
     const stats = {
       total: leads.length,
-      new: leads.filter(l => l.status === 'new').length,
-      contacted: leads.filter(l => l.status === 'contacted').length,
-      quoted: leads.filter(l => l.status === 'quoted').length,
-      won: leads.filter(l => l.status === 'won').length,
-      lost: leads.filter(l => l.status === 'lost').length
+      new: leads.filter((l) => l.status === 'new').length,
+      contacted: leads.filter((l) => l.status === 'contacted').length,
+      quoted: leads.filter((l) => l.status === 'quoted').length,
+      won: leads.filter((l) => l.status === 'won').length,
+      lost: leads.filter((l) => l.status === 'lost').length
     };
 
     res.json({ success: true, stats });
   } catch (err) {
+    console.error(err.message);
     res.status(500).json({ error: 'Stats failed' });
   }
 });
 
 // ---------- Admin UI ----------
 app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+});
+
+app.get('/admin/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
 });
 
@@ -202,4 +232,7 @@ app.listen(PORT, () => {
   console.log(`Dawit Data server running on port ${PORT}`);
   console.log(`Landing page : http://localhost:${PORT}`);
   console.log(`Admin        : http://localhost:${PORT}/admin`);
+  if (!process.env.ADMIN_TOKEN || process.env.ADMIN_TOKEN.length < 16) {
+    console.warn('⚠  Set a strong ADMIN_TOKEN in .env before going live.');
+  }
 });
