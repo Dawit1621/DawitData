@@ -2,11 +2,10 @@
 
 > **Full system documentation:** See [`DOCUMENTATION.md`](./DOCUMENTATION.md)
 
-
 Professional data entry & analysis services platform.  
 This is the core system for managing client inquiries and presenting services.
 
-**Author:** Dawit  
+**Author:** Dawit Biru  
 **Email:** dawitassisstant@gmail.com
 
 ---
@@ -16,7 +15,7 @@ This is the core system for managing client inquiries and presenting services.
 | Component | Description |
 |-----------|-------------|
 | **Public Landing Page** | Bilingual (English + Amharic), conversion-focused |
-| **Contact Form** | Saves leads directly into database |
+| **Contact Form** | Saves leads directly into the database |
 | **REST API** | Clean endpoints for leads |
 | **Mini Database** | JSON file based — simple, reliable, grows with you |
 | **Admin Dashboard** | View leads, change status, track pipeline |
@@ -38,8 +37,10 @@ dawit-data/
 │   └── server.js         # Express server + REST API
 ├── data/                 # Database file (created automatically)
 ├── .env.example
+├── .gitignore
 ├── package.json
-└── README.md
+├── README.md
+└── DOCUMENTATION.md
 ```
 
 ---
@@ -73,8 +74,8 @@ Login to admin using the `ADMIN_TOKEN` you set in `.env`.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `PORT` | No | Default 3000 |
-| `ADMIN_TOKEN` | **Yes** | Secret token for admin access |
-| `NODE_ENV` | No | production / development |
+| `ADMIN_TOKEN` | **Yes** | Secret token for admin access (32+ chars recommended) |
+| `NODE_ENV` | No | `production` / `development` |
 
 **Important:** Change `ADMIN_TOKEN` to a long random string before going live.
 
