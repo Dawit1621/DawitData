@@ -248,7 +248,9 @@
         }
         empty.style.display = 'none';
 
-        tbody.innerHTML = data.leads.map(l => `
+        tbody.innerHTML = data.leads.map(l => {
+          const id = escapeHtml(l.id);
+          return `
           <tr>
             <td>${formatDate(l.created_at)}</td>
             <td><strong>${escapeHtml(l.name)}</strong></td>
@@ -256,19 +258,20 @@
             <td>${escapeHtml(l.service || '—')}</td>
             <td>${escapeHtml(l.budget || '—')}</td>
             <td>${l.language === 'am' ? 'አማ' : 'EN'}</td>
-            <td><span class="status ${l.status}">${l.status}</span></td>
+            <td><span class="status ${escapeHtml(l.status)}">${escapeHtml(l.status)}</span></td>
             <td class="actions">
-              <select onchange="updateStatus(${l.id}, this.value)">
+              <select onchange="updateStatus('${id}', this.value)">
                 <option value="new" ${l.status==='new'?'selected':''}>new</option>
                 <option value="contacted" ${l.status==='contacted'?'selected':''}>contacted</option>
                 <option value="quoted" ${l.status==='quoted'?'selected':''}>quoted</option>
                 <option value="won" ${l.status==='won'?'selected':''}>won</option>
                 <option value="lost" ${l.status==='lost'?'selected':''}>lost</option>
               </select>
-              <button onclick="showDetail(${l.id})" style="margin-left:6px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:white;cursor:pointer;font-size:0.8rem;">View</button>
+              <button onclick="showDetail('${id}')" style="margin-left:6px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:white;cursor:pointer;font-size:0.8rem;">View</button>
             </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
       } catch (e) {
         console.error(e);
       }
@@ -323,8 +326,10 @@
 
     function formatDate(str) {
       if (!str) return '—';
-      const d = new Date(str + 'Z');
-      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      // ISO strings from the server already include Z (UTC); do not append another Z
+      const d = new Date(str);
+      if (Number.isNaN(d.getTime())) return str;
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     function escapeHtml(text) {
