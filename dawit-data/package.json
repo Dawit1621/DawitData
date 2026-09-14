@@ -1,14 +1,19 @@
 {
   "name": "dawit-data",
-  "version": "1.0.0",
-  "description": "Dawit Data - Professional Data Entry & Analysis Services. Lead management system for freelance business.",
+  "version": "1.1.0",
+  "description": "Dawit Data — Professional data entry & analysis services. Lead management system for a freelance business.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
-  "keywords": ["data-entry", "data-analysis", "freelance", "lead-management"],
-  "author": "Dawit",
+  "keywords": [
+    "data-entry",
+    "data-analysis",
+    "freelance",
+    "lead-management"
+  ],
+  "author": "Dawit Biru",
   "license": "UNLICENSED",
   "dependencies": {
     "cors": "^2.8.5",
