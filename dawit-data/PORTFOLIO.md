@@ -6,7 +6,7 @@ Live site (Render): https://dawitdata.onrender.com
 
 [CASE-STUDY-CSP-002.md](./CASE-STUDY-CSP-002.md) is the client-facing write-up of the FDA registration cleanup (16,373 records).
 
-Do **not** commit the full 16K-row workbook to GitHub.
+Do **not** commit the full 16K-row workbook to GitHub. Keep it local. Share only after a client asks.
 
 ## Upwork portfolio title
 
@@ -20,10 +20,12 @@ Transformed a messy FDA medical-device registration extract (16,382 source rows)
 
 Excel Data Cleaning, Data Validation, CRM Data Preparation, Entity Separation, Data Quality Assurance, Salesforce, HubSpot, Zoho CRM, Microsoft Dynamics, Spreadsheet QA
 
-## Packages
+## Packages (quote from these)
 
 | Package | Rows | From |
 | --- | --- | --- |
 | Starter cleanup | ≤ 500 | $40 |
 | Standard cleanup | ≤ 2,000 | $90 |
 | CRM-ready prep | ≤ 5,000 | $180 |
+
+Larger files: sample first, then fixed quote.
